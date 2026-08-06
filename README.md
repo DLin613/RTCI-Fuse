@@ -63,19 +63,15 @@ RTCI-Fuse/
 
 ## 环境依赖
 
-| 依赖 |
-| --- |
-| `torch` |
-| `torchvision` |
-| `torch_geometric` |
-| `h5py` |
-| `numpy` |
-| `pillow` |
-| `scikit-image` |
-| `pytorch_msssim` |
-| `tqdm` |
-| `matplotlib` |
-
+`torch`
+`torchvision`
+`torch_geometric`
+`h5py`
+`numpy`
+`pillow`
+`scikit-image`
+`pytorch_msssim`
+`tqdm`
 ---
 
 ## 项目启动主要配置说明
