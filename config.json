@@ -1,0 +1,22 @@
+{
+  "order": 1,
+  "name": "normal",
+  "image_size": 64,
+  "encoder": {
+    "gcn": {
+      "slic": {
+        "scale": 2.0,
+        "sigma": 5,
+        "compactness": 10
+      }
+    }
+  },
+  "fusion": {
+  },
+  "loss": {
+    "alpha": 2.5,
+    "beta": 0.6,
+    "gamma": 0.2,
+    "delta": 0.3
+  }
+}
