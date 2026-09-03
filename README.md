@@ -4,6 +4,8 @@
 
 Regional Topology Representation Learning and Cross-Representation Interaction for Infrared and Visible Image Fusion
 
+[简体中文](./README_zh-CN.md) | **English**
+
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.5+-ee4c2c?logo=pytorch&logoColor=white)
 ![CUDA](https://img.shields.io/badge/CUDA-Supported-76B900?logo=nvidia&logoColor=white)
@@ -11,57 +13,57 @@ Regional Topology Representation Learning and Cross-Representation Interaction f
 
 ---
 
-## 目录
+## Table of Contents
 
-- [目录结构](#目录结构)
-- [环境依赖](#环境依赖)
-- [项目启动主要配置说明](#项目启动主要配置说明)
-  - [全局配置 config.json](#全局配置-configjson)
-  - [训练脚本参数 train.py](#训练脚本参数-trainpy)
-  - [测试脚本参数 test.py](#测试脚本参数-testpy)
-- [测试数据集结构介绍](#测试数据集结构介绍)
-  - [训练数据（H5 格式）](#训练数据h5-格式)
-  - [测试数据（图像文件夹）](#测试数据图像文件夹)
-- [快速启动](#快速启动)
-- [训练日志与产物](#训练日志与产物)
+- [Directory Structure](#directory-structure)
+- [Dependencies](#dependencies)
+- [Main Configuration](#main-configuration)
+  - [Global Config config.json](#global-config-configjson)
+  - [Training Script Parameters train.py](#training-script-parameters-trainpy)
+  - [Testing Script Parameters test.py](#testing-script-parameters-testpy)
+- [Dataset Structure](#dataset-structure)
+  - [Training Data (H5 Format)](#training-data-h5-format)
+  - [Test Data (Image Folders)](#test-data-image-folders)
+- [Quick Start](#quick-start)
+- [Training Logs and Artifacts](#training-logs-and-artifacts)
 
 ---
 
-## 目录结构
+## Directory Structure
 
 ```
 RTCI-Fuse/
-├── components/              # 基础组件（SimAM、LSKblock、窗口注意力）
+├── components/              # Base components (SimAM, LSKblock, window attention)
 │   └── components.py
 ├── config/
-│   └── config.py            # 设备与图像尺寸常量
-├── detail_loss/             # 训练损失明细日志（自动生成）
+│   └── config.py            # Device and image size constants
+├── detail_loss/             # Training loss detail logs (auto-generated)
 ├── h5/
-│   └── MSRS_imgsize_64.h5   # 训练用 HDF5 数据集
+│   └── MSRS_imgsize_64.h5   # HDF5 dataset for training
 ├── loss/
-│   ├── fusion_loss.py       # 融合损失加权组合
-│   └── loss.py              # 梯度/强度/SSIM/对比度四个子损失
+│   ├── fusion_loss.py       # Weighted fusion loss combination
+│   └── loss.py              # Four sub-losses: gradient/intensity/SSIM/contrast
 ├── model/
-│   └── RTCI-Fuse.pth        # 训练保存的权重文件
+│   └── RTCI-Fuse.pth        # Saved weight file
 ├── modules/
-│   └── modules.py           # GCN 模块、CRE、Projection
+│   └── modules.py           # GCN module, CRE, Projection
 ├── net/
-│   ├── encoder.py           # CNN/GCN 编码器
-│   ├── fusion.py            # 跨模态融合模块
-│   ├── decoder.py           # 多尺度残差解码器
-│   └── network.py           # 整体网络封装
+│   ├── encoder.py           # CNN/GCN encoder
+│   ├── fusion.py            # Cross-modal fusion module
+│   ├── decoder.py           # Multi-scale residual decoder
+│   └── network.py           # Overall network wrapper
 ├── utils/
-│   ├── data_loader.py       # H5 / 训练 / 测试 数据加载器
-│   ├── early_stopping.py    # 早停策略
-│   └── utils.py             # SLIC、Sobel、配置读取等工具
-├── config.json              # 全局超参配置
-├── train.py                 # 训练入口
-└── test.py                  # 测试入口
+│   ├── data_loader.py       # H5 / training / test data loaders
+│   ├── early_stopping.py    # Early stopping strategy
+│   └── utils.py             # SLIC, Sobel, config reading utilities
+├── config.json              # Global hyperparameter configuration
+├── train.py                 # Training entry
+└── test.py                  # Testing entry
 ```
 
 ---
 
-## 环境依赖
+## Dependencies
 
 `torch`
 `torchvision`
@@ -74,11 +76,11 @@ RTCI-Fuse/
 `tqdm`
 ---
 
-## 项目启动主要配置说明
+## Main Configuration
 
-### 全局配置 config.json
+### Global Config config.json
 
-项目根目录下的 [`config.json`](file:///f:/post/code/RTCI-Fuse/config.json) 是网络结构与损失权重的核心配置文件：
+The [`config.json`](file:///f:/post/code/RTCI-Fuse/config.json) in the project root directory is the core configuration file for network structure and loss weights:
 
 ```json
 {
@@ -104,22 +106,22 @@ RTCI-Fuse/
 }
 ```
 
-| 字段 | 含义 | 说明 |
+| Field | Meaning | Description |
 | --- | --- | --- |
-| `order` | 实验序号 | 用于区分不同实验批次 |
-| `name` | 实验名称 | 当前实验标识 |
-| `image_size` | 训练 patch 尺寸 | 与 `h5` 数据集切片大小一致（64） |
-| `encoder.gcn.slic.scale` | SLIC 超像素数量系数 | 实际超像素数 ≈ `max(h, w) * scale` |
-| `encoder.gcn.slic.sigma` | SLIC 高斯平滑参数 | 控制分割边界平滑度 |
-| `encoder.gcn.slic.compactness` | SLIC 紧凑度 | 平衡空间距离与色彩距离 |
-| `loss.alpha` | 梯度损失权重 | 主导融合清晰度 |
-| `loss.beta` | SSIM 损失权重 | 控制结构相似性 |
-| `loss.gamma` | 强度损失权重 | 约束亮度范围 |
-| `loss.delta` | 对比度损失权重 | 增强对比信息 |
+| `order` | Experiment number | Used to distinguish different experiment batches |
+| `name` | Experiment name | Current experiment identifier |
+| `image_size` | Training patch size | Consistent with the slice size of the `h5` dataset (64) |
+| `encoder.gcn.slic.scale` | SLIC superpixel count coefficient | Actual superpixel count ≈ `max(h, w) * scale` |
+| `encoder.gcn.slic.sigma` | SLIC Gaussian smoothing parameter | Controls the smoothness of segmentation boundaries |
+| `encoder.gcn.slic.compactness` | SLIC compactness | Balances spatial and color distances |
+| `loss.alpha` | Gradient loss weight | Dominates fusion sharpness |
+| `loss.beta` | SSIM loss weight | Controls structural similarity |
+| `loss.gamma` | Intensity loss weight | Constrains brightness range |
+| `loss.delta` | Contrast loss weight | Enhances contrast information |
 
-### 训练脚本参数 train.py
+### Training Script Parameters train.py
 
-[`train.py`](file:///f:/post/code/RTCI-Fuse/train.py) 的 `__main__` 入口集中了训练超参，可直接修改：
+The `__main__` entry of [`train.py`](file:///f:/post/code/RTCI-Fuse/train.py) centralizes the training hyperparameters, which can be modified directly:
 
 ```python
 config = load_config(f'./config.json')
@@ -137,15 +139,15 @@ config['save_path'] = f'./model/'
 config['lr'] = lr
 ```
 
-### 测试脚本参数 test.py
+### Testing Script Parameters test.py
 
-[`test.py`](file:///f:/post/code/RTCI-Fuse/test.py) 的 `__main__` 入口配置推理路径：
+The `__main__` entry of [`test.py`](file:///f:/post/code/RTCI-Fuse/test.py) configures the inference paths:
 
 ```python
 config = load_config(f'./config.json')
 
-data_path = 'F:/post/dataset'        # 测试数据集根目录
-data_set = "MSRS"                    # 子数据集名称
+data_path = 'F:/post/dataset'        # Test dataset root directory
+data_set = "MSRS"                    # Sub-dataset name
 
 config['data_path'] = data_path
 model_name = f'RTCI-Fuse.pth'
@@ -154,117 +156,117 @@ config['model_path'] = f'./model/{model_name}'
 config['save_path'] = f'./RTCI-Fuse'
 ```
 
-| 参数 | 默认值 | 说明 |
+| Parameter | Default | Description |
 | --- | --- | --- |
-| `data_path` | `F:/post/dataset` | 测试数据集根目录 |
-| `data_set` | `MSRS` | 子数据集名称（与目录名一致） |
-| `model_path` | `./model/RTCI-Fuse.pth` | 权重文件路径 |
-| `save_path` | `./RTCI-Fuse` | 融合结果输出目录 |
+| `data_path` | `F:/post/dataset` | Test dataset root directory |
+| `data_set` | `MSRS` | Sub-dataset name (must match the directory name) |
+| `model_path` | `./model/RTCI-Fuse.pth` | Weight file path |
+| `save_path` | `./RTCI-Fuse` | Fusion result output directory |
 
 ---
 
-## 测试数据集结构介绍
+## Dataset Structure
 
-### 训练数据（H5 格式）
+### Training Data (H5 Format)
 
-训练数据为 [`h5/MSRS_imgsize_64.h5`](file:///f:/post/code/RTCI-Fuse/h5/MSRS_imgsize_64.h5)，内部结构如下：
+The training data is [`h5/MSRS_imgsize_64.h5`](file:///f:/post/code/RTCI-Fuse/h5/MSRS_imgsize_64.h5), with the following internal structure:
 
 ```
 MSRS_imgsize_64.h5
-├── /ir_patchs/        # 红外图像 patch 集合
-│   ├── 0001           # key 为样本编号（字符串）
+├── /ir_patchs/        # Infrared image patch collection
+│   ├── 0001           # key is the sample number (string)
 │   ├── 0002
 │   └── ...
-└── /vis_patchs/       # 可见光图像 patch 集合
-    ├── 0001           # 与 ir_patchs 同名 key 一一对应
+└── /vis_patchs/       # Visible image patch collection
+    ├── 0001           # One-to-one correspondence with same-named key in ir_patchs
     ├── 0002
     └── ...
 ```
 
-**说明**：
+**Notes**:
 
-- 每个 key 对应一对 `(ir, vis)` patch，shape 通常为 `(64, 64)` 或 `(1, 64, 64)`。
-- IR 与 VIS 通过 **相同的 key** 配对，加载数据时按 key 索引（见 [`H5Dataset`](file:///f:/post/code/RTCI-Fuse/utils/data_loader.py)）。
+- Each key corresponds to a pair of `(ir, vis)` patches, with shape typically `(64, 64)` or `(1, 64, 64)`.
+- IR and VIS are paired via **the same key**, and indexed by key when loading data (see [`H5Dataset`](file:///f:/post/code/RTCI-Fuse/utils/data_loader.py)).
 
-**下载地址**：
+**Download**:
 
-> H5 训练数据集下载：[MSRS_imgsize_64.h5](https://pan.baidu.com/s/10PQQa2IMvGhuBhLeIBUiBg?pwd=te22)  `提取码: te22`
+> H5 training dataset download: [MSRS_imgsize_64.h5](https://pan.baidu.com/s/10PQQa2IMvGhuBhLeIBUiBg?pwd=te22)  `extraction code: te22`
 >
-> <!-- 请将上方链接替换为实际分享地址，例如百度网盘 / Google Drive / OneDrive 等 -->
+> <!-- Please replace the above link with the actual share address, e.g. Baidu Netdisk / Google Drive / OneDrive etc. -->
 
-### 测试数据（图像文件夹）
+### Test Data (Image Folders)
 
-测试数据集采用目录约定，由 [`test.py`](file:///f:/post/code/RTCI-Fuse/test.py) 中的 `data_path` 与 `data_set` 组合定位：
+The test dataset uses a directory convention, located by combining `data_path` and `data_set` in [`test.py`](file:///f:/post/code/RTCI-Fuse/test.py):
 
 ```
 F:/post/dataset/                   ← data_path
 └── MSRS/                          ← data_set
-    ├── ir/                        ← 红外图像目录
+    ├── ir/                        ← infrared image directory
     │   ├── 0001.png
     │   ├── 0002.png
     │   └── ...
-    └── vis/                       ← 可见光图像目录
-        ├── 0001.png               ← 与 ir/ 同名图像配对
+    └── vis/                       ← visible image directory
+        ├── 0001.png               ← paired with same-named image in ir/
         ├── 0002.png
         └── ...
 ```
 
-**目录约定**：
+**Directory Convention**:
 
-- `{data_path}/{data_set}/ir/` 存放红外图像。
-- `{data_path}/{data_set}/vis/` 存放可见光图像。
-- IR 与 VIS 图像通过 **同名文件** 配对，加载时使用 `sorted(glob(...))` 保证顺序一致。
-- 支持 `png / jpg / jpeg / bmp` 等常见格式（`glob('*.*')` 匹配）。
-- **两目录文件名必须一一对应**，否则 [`TestDataLoader`](file:///f:/post/code/RTCI-Fuse/utils/data_loader.py) 会抛出 `ValueError`。
+- `{data_path}/{data_set}/ir/` stores infrared images.
+- `{data_path}/{data_set}/vis/` stores visible images.
+- IR and VIS images are paired via **same filename**, using `sorted(glob(...))` during loading to ensure consistent ordering.
+- Supports common formats such as `png / jpg / jpeg / bmp` (matched by `glob('*.*')`).
+- **Filenames in both directories must correspond one-to-one**, otherwise [`TestDataLoader`](file:///f:/post/code/RTCI-Fuse/utils/data_loader.py) will raise a `ValueError`.
 
 ---
 
-## 快速启动
+## Quick Start
 
-**1. 训练**
+**1. Training**
 
 ```bash
-# 确保 h5/MSRS_imgsize_64.h5 已就位
+# Ensure h5/MSRS_imgsize_64.h5 is in place
 python train.py
 ```
 
-训练过程中：
+During training:
 
-- 终端实时输出每轮 `total loss / avg loss`；
-- 检查点保存在 `./model/RTCI-Fuse_{epoch}.pth`；
-- 最终最优权重保存为 `./model/RTCI-Fuse.pth`；
-- 损失明细写入 `./detail_loss/{start_time}_loss_detail.txt`。
+- The terminal outputs `total loss / avg loss` for each epoch in real time;
+- Checkpoints are saved at `./model/RTCI-Fuse_{epoch}.pth`;
+- The final optimal weight is saved as `./model/RTCI-Fuse.pth`;
+- Loss details are written to `./detail_loss/{start_time}_loss_detail.txt`.
 
-**2. 测试**
+**2. Testing**
 
 ```bash
-# 1) 修改 test.py 中的 data_path / data_set 指向你的数据集
-# 2) 确保 ./model/RTCI-Fuse.pth 存在
+# 1) Modify data_path / data_set in test.py to point to your dataset
+# 2) Ensure ./model/RTCI-Fuse.pth exists
 python test.py
 ```
 
-融合结果将保存至 `./RTCI-Fuse/{data_set}/` 目录，文件名与输入 IR 图像一致。
+Fusion results will be saved to the `./RTCI-Fuse/{data_set}/` directory, with filenames identical to the input IR images.
 
 ---
 
-## 训练日志与产物
+## Training Logs and Artifacts
 
-训练完成后会生成以下产物：
+The following artifacts are generated after training:
 
 ```
 RTCI-Fuse/
 ├── model/
-│   ├── RTCI-Fuse.pth              # 最终保存的权重（早停最优或最后一轮）
-│   └── RTCI-Fuse_{epoch}.pth      # 中途检查点
+│   ├── RTCI-Fuse.pth              # Final saved weight (early-stopping best or last epoch)
+│   └── RTCI-Fuse_{epoch}.pth      # Intermediate checkpoints
 ├── detail_loss/
-│   └── {YYYYMMDD_HH_MM_SS}_loss_detail.txt   # 每轮各项损失明细
-└── RTCI-Fuse/                     # 测试输出（运行 test.py 后生成）
+│   └── {YYYYMMDD_HH_MM_SS}_loss_detail.txt   # Per-epoch loss details
+└── RTCI-Fuse/                     # Test output (generated after running test.py)
     └── MSRS/
-        ├── 0001.png               # 融合结果
+        ├── 0001.png               # Fusion result
         └── ...
 ```
 
-损失明细文件示例（每轮一行）：
+Loss detail file example (one line per epoch):
 
 ```
 Epoch[1/80],avg loss detail[grad:0.014089,ssim:0.107453,intensity:0.006627,contrast:0.010811]
@@ -275,6 +277,6 @@ Epoch[2/80],avg loss detail[grad:0.012377,ssim:0.102008,intensity:0.006691,contr
 
 <div align="center">
 
-<sub>如果本项目对您的研究有帮助，欢迎 ⭐ Star 支持。</sub>
+<sub>If this project helps your research, please ⭐ Star to support it.</sub>
 
 </div>
